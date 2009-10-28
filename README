@@ -1,0 +1,37 @@
+NAME
+  testing.rb
+
+SYNOPSIS
+  adds the minimal features required in order to make test/unit not suck
+
+DESCRIPTION
+  testing.rb adds a small class and test dsl to allow declartive specifaction
+  of test/unit classes and methods.
+
+    Testing MyModule do
+      testing 'that it works' do
+        assert{ answer() == 42 }
+        assert_raises(subclass_of(SomeError)){ raise SomeError }
+      end
+    end
+
+
+  . Testing(object, &block)
+
+      builds a subclass of Test::Unit::TestCase for the given object
+
+  . testing(label, &block) 
+
+      builds a nicely named (slugified and counted) method name based of the
+      label.  these will run in order you define them.
+
+  . assert(*args, &block)
+
+      without a block the default test/unit behavour. with a block assert that
+      nothing is raised evaluating it and assert that the return value is
+      true.
+
+  . subclass_of(exception)
+
+      returns and object with the equality (===) method overridden to include
+      subclasses.
