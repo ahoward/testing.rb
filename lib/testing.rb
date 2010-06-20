@@ -28,6 +28,7 @@ BEGIN {
       name = ['TESTING', '%03d' % @@testing_subclass_count, slug].delete_if{|part| part.empty?}.join('_')
       name = name.upcase!
       const_set(:Name, name)
+
       def self.name() const_get(:Name) end
 
       def self.testno()
@@ -58,14 +59,19 @@ BEGIN {
         end
       end
 
-      def subclass_of exception
+      def subclass_of(exception)
         class << exception
           def ==(other) super or self > other end
         end
         exception
       end
 
+      def assert_raises(exception, &block)
+        super(subclass_of(exception), &block)
+      end
+
       module_eval &block
+
       self
     end
   end
