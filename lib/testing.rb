@@ -47,18 +47,21 @@ def Testing(*args, &block)
     alias_method '__assert__', 'assert'
 
     def assert(*args, &block)
-      if block
-        label = "assert(#{ args.join(' ') })"
-        result = nil
-        assert_nothing_raised{ result = block.call }
-        __assert__(result, label)
-        result
-      else
-        result = args.shift
-        label = "assert(#{ args.join(' ') })"
-        __assert__(result, label)
-        result
+      deferred = lambda do
+        if block
+          label = "assert(#{ args.join(' ') })"
+          result = nil
+          assert_nothing_raised{ result = block.call }
+          __assert__(result, label)
+          result
+        else
+          result = args.shift
+          label = "assert(#{ args.join(' ') })"
+          __assert__(result, label)
+          result
+        end
       end
+      @asserting ? @assertion_stack.push(deferred) : deferred.call()
     end
 
     def subclass_of exception
@@ -66,6 +69,34 @@ def Testing(*args, &block)
         def ==(other) super or self > other end
       end
       exception
+    end
+
+    def asserting(&block)
+      @asserting = true
+      block.call(@assertion_stack||=[])
+      errors = []
+
+      @assertion_stack.each do |deferred|
+        begin
+          deferred.call()
+        rescue Object => e
+          errors.push(e)
+        end
+      end
+
+      unless errors.empty?
+        error = errors.shift
+        class << error
+          attr_accessor :errors
+        end
+        error.errors = errors
+        error.message.replace("#{ error.message } (and #{ errors.size } more...)") unless errors.empty?
+        raise error
+      end
+
+    ensure
+      @assertion_stack.clear
+      @asserting = false 
     end
 
     module_eval &block
